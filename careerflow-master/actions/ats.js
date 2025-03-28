@@ -6,7 +6,7 @@ import { db } from "@/lib/prisma";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function calculateATSScore({ content, jobDescription }) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const user = await db.user.findUnique({
@@ -55,7 +55,7 @@ export async function calculateATSScore({ content, jobDescription }) {
 
   // Update the resume with the ATS score and feedback
   await db.resume.update({
-    where: { userId: user.id },
+    where: { userId: user.id},
     data: {
       atsScore: finalScore,
       feedback: finalFeedback,
