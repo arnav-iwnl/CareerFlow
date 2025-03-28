@@ -56,20 +56,45 @@ export const entrySchema = z
     }
   );
 
-  import { z } from "zod";
+
+
   export const resumeSchema = z.object({
     contactInfo: z.object({
-      email: z.string().email().optional(),
+      professionalTitle: z.string().optional(),
+      email: z.string().email("Invalid email").optional(),
       mobile: z.string().optional(),
-      linkedin: z.string().url().optional(),
-      twitter: z.string().url().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      linkedin: z.string().url("Invalid URL").optional(),
     }),
-    summary: z.string().min(1, "Summary is required"),
-    skills: z.string().min(1, "Skills are required"),
-    experience: z.array(entrySchema).min(1, "At least one experience entry is required"),
-    education: z.array(entrySchema).min(1, "At least one education entry is required"),
-    projects: z.array(entrySchema).optional(),
-    jobDescription: z.string().optional(), // New field
+    summary: z.string().optional(),
+    skills: z.string().optional(),
+    experience: z.array(
+      z.object({
+        organization: z.string().optional(),
+        title: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        description: z.string().optional(),
+      })
+    ).optional(),
+    education: z.array(
+      z.object({
+        organization: z.string().optional(),
+        title: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    ).optional(),
+    projects: z.array(
+      z.object({
+        title: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        description: z.string().optional(),
+      })
+    ).optional(),
+    jobDescription: z.string().optional(),
   });
 
 export const coverLetterSchema = z.object({

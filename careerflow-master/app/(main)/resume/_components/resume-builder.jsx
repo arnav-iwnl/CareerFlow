@@ -1,5 +1,5 @@
 // "use client";
-// import useFetch from "@/hooks/use-fetch";
+
 // import { calculateATSScore } from "@/actions/ats";
 // import { suggestKeywords } from "@/actions/keywords";
 // import { useState, useEffect } from "react";
@@ -14,7 +14,6 @@
 //   Save,
 // } from "lucide-react";
 // import { jsPDF } from "jspdf";
-// import "jspdf-autotable";
 // import { toast } from "sonner";
 // import MDEditor from "@uiw/react-md-editor";
 // import { Button } from "@/components/ui/button";
@@ -25,20 +24,17 @@
 // import { EntryForm } from "./entry-form";
 // import useFetch from "@/hooks/use-fetch";
 // import { useUser } from "@clerk/nextjs";
-// import { entriesToMarkdown } from "@/app/lib/helper";
 // import { resumeSchema } from "@/app/lib/schema";
-// import html2canvas from "html2canvas-pro";
-// import { jsPDF } from "jspdf";
 
 // export default function ResumeBuilder({ initialContent }) {
 //   const [activeTab, setActiveTab] = useState("edit");
 //   const [previewContent, setPreviewContent] = useState(initialContent);
-//   const { user } = useUser();
+//   const { user, isLoaded } = useUser();
 //   const [resumeMode, setResumeMode] = useState("preview");
 //   const [isGenerating, setIsGenerating] = useState(false);
 //   const [suggestedKeywords, setSuggestedKeywords] = useState("");
-//   const [atsScore, setAtsScore] = useState(null); // New state
-//   const [atsFeedback, setAtsFeedback] = useState(""); // New state
+//   const [atsScore, setAtsScore] = useState(null);
+//   const [atsFeedback, setAtsFeedback] = useState("");
 
 //   const {
 //     control,
@@ -49,7 +45,14 @@
 //   } = useForm({
 //     resolver: zodResolver(resumeSchema),
 //     defaultValues: {
-//       contactInfo: {},
+//       contactInfo: {
+//         professionalTitle: "",
+//         email: "",
+//         mobile: "",
+//         city: "",
+//         state: "",
+//         linkedin: "",
+//       },
 //       summary: "",
 //       skills: "",
 //       experience: [],
@@ -65,7 +68,7 @@
 //     data: saveResult,
 //     error: saveError,
 //   } = useFetch(saveResume);
-// // edited  here
+
 //   const {
 //     loading: isSuggesting,
 //     fn: suggestKeywordsFn,
@@ -79,9 +82,9 @@
 //     data: atsData,
 //     error: atsError,
 //   } = useFetch(calculateATSScore);
- 
-//   // Watch form fields for preview updates
+
 //   const formValues = watch();
+
 //   useEffect(() => {
 //     if (keywordsData && !isSuggesting) {
 //       setSuggestedKeywords(keywordsData);
@@ -103,6 +106,22 @@
 //     }
 //   }, [atsData, atsError, isCalculatingATS]);
 
+//   useEffect(() => {
+//     if (activeTab === "edit") {
+//       const newContent = getCombinedContent();
+//       setPreviewContent(newContent ? newContent : initialContent);
+//     }
+//   }, [formValues, activeTab, initialContent]);
+
+//   useEffect(() => {
+//     if (saveResult && !isSaving) {
+//       toast.success("Resume saved successfully!");
+//     }
+//     if (saveError) {
+//       toast.error(saveError.message || "Failed to save resume");
+//     }
+//   }, [saveResult, saveError, isSaving]);
+
 //   const handleCalculateATSScore = async () => {
 //     const jobDescription = formValues.jobDescription;
 //     if (!jobDescription) {
@@ -122,61 +141,65 @@
 //     await suggestKeywordsFn({ jobDescription });
 //   };
 
-// //edited here appy
-
-//   // Rebuild the preview content whenever form values change in "edit" mode
-//   useEffect(() => {
-//     if (activeTab === "edit") {
-//       const newContent = getCombinedContent();
-//       setPreviewContent(newContent ? newContent : initialContent);
-//     }
-//   }, [formValues, activeTab, initialContent]);
-
-//   // Show toast notifications for saving
-//   useEffect(() => {
-//     if (saveResult && !isSaving) {
-//       toast.success("Resume saved successfully!");
-//     }
-//     if (saveError) {
-//       toast.error(saveError.message || "Failed to save resume");
-//     }
-//   }, [saveResult, saveError, isSaving]);
-
-//   // Build contact info markdown
-//   const getContactMarkdown = () => {
-//     const { contactInfo } = formValues;
-//     const parts = [];
-//     if (contactInfo.email) parts.push(`Email: ${contactInfo.email}`);
-//     if (contactInfo.mobile) parts.push(`Contact: ${contactInfo.mobile}`);
-//     if (contactInfo.linkedin)
-//       parts.push(`LinkedIn(${contactInfo.linkedin})`);
-//     if (contactInfo.twitter) parts.push(`Twitter(${contactInfo.twitter})`);
-
-//     return parts.length > 0
-//       ? `${user.fullName}</div>
-      
-// <div align="center">
-// ${parts.join(" | ")}
-// </div>`
-//       : "";
-//   };
-
-//   // Combine all markdown sections
 //   const getCombinedContent = () => {
-//     const { summary, skills, experience, education, projects } = formValues;
-//     return [
-//       getContactMarkdown(),
-//       summary && `## PROFESSIONAL SUMMARY\n\n${summary}`,
-//       skills && `## SKILLS\n\n${skills}`,
-//       entriesToMarkdown(experience, "WORK EXPERIENCE"),
-//       entriesToMarkdown(education, "EDUCATION"),
-//       entriesToMarkdown(projects, "PROJECTS"),
-//     ]
+//     const { summary, skills, experience, education, projects, contactInfo } = formValues;
+//     const fullName = user?.fullName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Your Name";
+
+//     const header = [
+//       fullName,
+//       contactInfo.professionalTitle || "PROFESSIONAL TITLE",
+//       `${contactInfo.city || "City"}, ${contactInfo.state || "State"} | ${contactInfo.mobile || "Phone"} | ${contactInfo.email || "Email"}`,
+//     ].join("\n");
+
+//     const objective = summary ? `## Professional Summary\n\n${summary}\n\n---` : "";
+
+//     const experienceSection = experience.length
+//       ? `## Experience\n\n${experience
+//           .map(
+//             (exp) =>
+//               `${exp.organization || "Organization Name"} | ${exp.title || "Job Title"}\n${exp.startDate || "20XX"} - ${
+//                 exp.endDate || "20XX"
+//               }\n${exp.description
+//                 .split("\n")
+//                 .map((line) => `- ${line.trim()}`)
+//                 .join("\n")}`
+//           )
+//           .join("\n\n")}\n\n---`
+//       : "";
+
+//     const educationSection = education.length
+//       ? `## Education\n\n${education
+//           .map(
+//             (edu) =>
+//               `${edu.organization || "University Name"}, ${edu.title || "Degree"}\n${edu.startDate || "20XX"} - ${edu.endDate || "20XX"}`
+//           )
+//           .join("\n\n")}\n\n---`
+//       : "";
+
+//     const projectsSection = projects.length
+//       ? `## Projects\n\n${projects
+//           .map(
+//             (proj) =>
+//               `${proj.title || "Project Title"}\n${proj.startDate || "20XX"} - ${proj.endDate || "20XX"}\n${proj.description
+//                 .split("\n")
+//                 .map((line) => `- ${line.trim()}`)
+//                 .join("\n")}`
+//           )
+//           .join("\n\n")}\n\n---`
+//       : "";
+
+//     const skillsSection = skills
+//       ? `## Skills & Abilities\n\n${skills
+//           .split("\n")
+//           .map((skill) => `- ${skill.trim()}`)
+//           .join("\n")}\n\n---`
+//       : "";
+
+//     return [header, objective, experienceSection, educationSection, projectsSection, skillsSection]
 //       .filter(Boolean)
 //       .join("\n\n");
 //   };
 
-//   // Save the resume data
 //   const onSubmit = async () => {
 //     try {
 //       const formattedContent = previewContent
@@ -188,158 +211,96 @@
 //       console.error("Save error:", error);
 //     }
 //   };
-  
 
-//   // Generate single-page PDF with aspect ratio logic
-//   //EDITED HERE TO RENDER RESUME USING JSPDF
-//   /*const generatePDF = async () => {
-//     setIsGenerating(true);
-//     try {
-//       const element = document.getElementById("resume-pdf");
-//       if (!element) {
-//         console.error("PDF container element not found.");
-//         setIsGenerating(false);
-//         return;
-//       }
-//       // Wait for the element to render completely before capturing
-//       const canvas = await html2canvas(element, { scale: 2 });
-//       const imgData = canvas.toDataURL("image/jpeg", 0.98);
-
-//       const canvasWidth = canvas.width;
-//       const canvasHeight = canvas.height;
-//       const aspectRatio = canvasHeight / canvasWidth;
-
-//       // Create jsPDF (A4, portrait)
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pageWidth = pdf.internal.pageSize.getWidth();
-//       const pageHeight = pdf.internal.pageSize.getHeight();
-
-//       let pdfWidth = pageWidth;
-//       let pdfHeight = pdfWidth * aspectRatio;
-
-//       // Scale down if height exceeds page height
-//       if (pdfHeight > pageHeight) {
-//         const scaleFactor = pageHeight / pdfHeight;
-//         pdfHeight = pageHeight;
-//         pdfWidth *= scaleFactor;
-//       }
-
-//       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("resume.pdf");
-//     } catch (error) {
-//       console.error("PDF generation error:", error);
-//     } finally {
-//       setIsGenerating(false);
-//     }
-//   };*/
-
-  
 //   const generatePDF = async () => {
 //     setIsGenerating(true);
 //     try {
 //       const doc = new jsPDF("p", "mm", "a4");
 //       const pageWidth = doc.internal.pageSize.getWidth();
-//       const pageHeight = doc.internal.pageSize.getHeight();
-//       const margin = 15; // 15mm margins
+//       const margin = 15;
 //       const maxWidth = pageWidth - 2 * margin;
 //       let yPosition = margin;
-  
-//       // Set font and size
+
 //       doc.setFont("helvetica", "normal");
 //       doc.setFontSize(12);
-  
-//       // Split the content into lines
+
 //       const content = getCombinedContent();
 //       const lines = content.split("\n");
-  
-//       // Process each line
+//       let isSectionEnd = false;
+
 //       for (let line of lines) {
 //         line = line.trim();
 //         if (!line) {
-//           yPosition += 4; // Add spacing for empty lines
+//           yPosition += 4;
 //           continue;
 //         }
-  
-//         // Handle headings
-//         if (line.startsWith("## ")) 
-//           {
-//             if (yPosition !== margin) {
-//               // Add a line separator before the heading (except for the first section)
-//               doc.setDrawColor(200, 200, 200);
-//               doc.line(margin, yPosition, pageWidth - margin, yPosition);
-//               yPosition += 4;
-//             }
+
+//         if (yPosition === margin) {
+//           doc.setFont("helvetica", "bold");
+//           doc.setFontSize(16);
+//           doc.text(line, margin, yPosition);
+//           yPosition += 6;
+//           line = lines.shift();
+//           doc.setFont("helvetica", "normal");
+//           doc.setFontSize(12);
+//           doc.text(line, margin, yPosition);
+//           yPosition += 5;
+//           line = lines.shift();
+//           doc.setFontSize(10);
+//           doc.text(line, margin, yPosition);
+//           yPosition += 8;
+//           continue;
+//         }
+
+//         if (line === "---") {
+//           isSectionEnd = true;
+//           doc.setDrawColor(150, 150, 150);
+//           doc.line(margin, yPosition, pageWidth - margin, yPosition);
+//           yPosition += 6;
+//           continue;
+//         }
+
+//         if (line.startsWith("## ")) {
+//           if (yPosition !== margin + 19 && isSectionEnd) {
+//             yPosition += 4;
+//           }
 //           doc.setFont("helvetica", "bold");
 //           doc.setFontSize(14);
 //           const headingText = line.replace("## ", "");
-//           const splitText = doc.splitTextToSize(headingText, maxWidth);
-//           doc.text(splitText, margin, yPosition);
-//           yPosition += splitText.length * 6 + 4; // Adjust spacing
+//           doc.text(headingText, margin, yPosition);
+//           yPosition += 8;
 //           doc.setFont("helvetica", "normal");
 //           doc.setFontSize(12);
-//         }
-//         // Handle subheadings (e.g., job titles)
-//         else if (
-//           line.includes(" @ ") &&
-//           !line.startsWith("-") &&
-//           !line.toLowerCase().startsWith("email:") &&
-//           !line.toLowerCase().startsWith("phone:") &&
-//           !line.toLowerCase().startsWith("linkedin:") &&
-//           !line.toLowerCase().startsWith("twitter:")
-//         ) {
+//           isSectionEnd = false;
+//         } else if (line.includes(" | ") && !line.startsWith("-")) {
 //           doc.setFont("helvetica", "bold");
 //           doc.setFontSize(12);
 //           const splitText = doc.splitTextToSize(line, maxWidth);
 //           doc.text(splitText, margin, yPosition);
 //           yPosition += splitText.length * 5 + 2;
 //           doc.setFont("helvetica", "normal");
-//         }
-//         // Handle contact info and name
-//         else if (
-//           yPosition === margin ||
-//           line.toLowerCase().startsWith("email:") ||
-//           line.toLowerCase().startsWith("phone:") ||
-//           line.toLowerCase().startsWith("linkedin:") ||
-//           line.toLowerCase().startsWith("twitter:")
-//         ) {
-//           if (yPosition === margin) {
-//             // Name at the top
-//             doc.setFont("helvetica", "bold");
-//             doc.setFontSize(16);
-//             doc.text(line, margin, yPosition);
-//             yPosition += 8;
-//             doc.setFont("helvetica", "normal");
-//             doc.setFontSize(10);
-//           } else {
-//             // Contact info
-//             doc.setFontSize(10);
-//             const splitText = doc.splitTextToSize(line, maxWidth);
-//             doc.text(splitText, margin, yPosition);
-//             yPosition += splitText.length * 4 + 2;
-//           }
-//         }
-//         // Handle bullet points
-//         else if (line.startsWith("- ")) {
+//         } else if (/^\d{4}\s*-\s*\d{4}$/.test(line)) {
+//           doc.setFontSize(10);
+//           doc.text(line, margin, yPosition);
+//           yPosition += 5;
+//         } else if (line.startsWith("- ")) {
 //           const bulletText = line.replace("- ", "");
 //           const splitText = doc.splitTextToSize(bulletText, maxWidth - 5);
-//           doc.text("•", margin, yPosition); // Add bullet
+//           doc.text("•", margin, yPosition);
 //           doc.text(splitText, margin + 5, yPosition);
 //           yPosition += splitText.length * 5 + 2;
-//         }
-//         // Handle regular text (e.g., dates, summary, skills)
-//         else {
+//         } else {
 //           const splitText = doc.splitTextToSize(line, maxWidth);
 //           doc.text(splitText, margin, yPosition);
 //           yPosition += splitText.length * 5 + 2;
 //         }
-  
-//         // Check for page overflow
-//         if (yPosition > pageHeight - margin) {
+
+//         if (yPosition > doc.internal.pageSize.getHeight() - margin) {
 //           doc.addPage();
 //           yPosition = margin;
 //         }
 //       }
-  
+
 //       doc.save("resume.pdf");
 //     } catch (error) {
 //       console.error("PDF generation error:", error);
@@ -348,29 +309,21 @@
 //     }
 //   };
 
-// //edited here to render text using jsPDF
+//   if (!isLoaded) {
+//     return (
+//       <div className="flex justify-center items-center h-screen">
+//         <Loader2 className="h-8 w-8 animate-spin" />
+//       </div>
+//     );
+//   }
+
 //   return (
-//     <div data-color-mode="light" className="space-y-4">
+//     <div data-color-mode="light" className="max-w-4xl mx-auto space-y-4">
 //       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
 //         <h1 className="font-bold gradient-title text-5xl md:text-6xl">
 //           Resume Builder
 //         </h1>
-//         <Button
-//             variant="outline"
-//             onClick={handleCalculateATSScore}
-//             disabled={isCalculatingATS}
-//           >
-//             {isCalculatingATS ? (
-//               <>
-//                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-//                 Calculating...
-//               </>
-//             ) : (
-//               "Calculate ATS Score"
-//             )}
-//           </Button>
 //         <div className="space-x-2">
-//           {/* Save button */}
 //           <Button
 //             variant="destructive"
 //             onClick={handleSubmit(onSubmit)}
@@ -388,7 +341,6 @@
 //               </>
 //             )}
 //           </Button>
-//           {/* PDF generation button */}
 //           <Button onClick={generatePDF} disabled={isGenerating}>
 //             {isGenerating ? (
 //               <>
@@ -411,58 +363,65 @@
 //           <TabsTrigger value="preview">Markdown</TabsTrigger>
 //         </TabsList>
 
-//         {/* EDIT TAB */}
 //         <TabsContent value="edit">
 //           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-//             {/* Job Description */}
-//     <div className="space-y-4">
-//       <h3 className="text-lg font-medium">Job Description (Optional)</h3>
-//       <Controller
-//         name="jobDescription"
-//         control={control}
-//         render={({ field }) => (
-//           <Textarea
-//             {...field}
-//             className="h-32"
-//             placeholder="Paste the job description here to get keyword suggestions..."
-//           />
-//         )}
-//       />
-//       {errors.jobDescription && (
-//         <p className="text-sm text-red-500">{errors.jobDescription.message}</p>
-//       )}
-
-//     {/*edited here*/}
-//          <Button
-//               type="button"
-//               variant="outline"
-//               onClick={handleSuggestKeywords}
-//               disabled={isSuggesting}
-//             >
-//               {isSuggesting ? (
-//                 <>
-//                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-//                   Suggesting...
-//                 </>
-//               ) : (
-//                 "Suggest Keywords"
+//             <div className="space-y-4">
+//               <h3 className="text-lg font-medium">Job Description (Optional)</h3>
+//               <Controller
+//                 name="jobDescription"
+//                 control={control}
+//                 render={({ field }) => (
+//                   <Textarea
+//                     {...field}
+//                     className="h-32"
+//                     placeholder="Paste the job description here to get keyword suggestions..."
+//                   />
+//                 )}
+//               />
+//               {errors.jobDescription && (
+//                 <p className="text-sm text-red-500">{errors.jobDescription.message}</p>
 //               )}
-//             </Button>
-//             {suggestedKeywords && (
-//               <div className="p-4 border rounded-lg bg-muted/50">
-//                 <h4 className="text-sm font-medium">Suggested Keywords:</h4>
-//                 <p className="text-sm">{suggestedKeywords}</p>
-//                 <p className="text-sm text-muted-foreground mt-2">
-//                   Add these keywords to your skills, summary, or experience sections to improve ATS compatibility.
-//                 </p>
-//               </div>
-//             )}
-//            </div>
-// {/*edit ends here*/}
-//             {/* Contact Information */}
+//               <Button
+//                 type="button"
+//                 variant="outline"
+//                 onClick={handleSuggestKeywords}
+//                 disabled={isSuggesting}
+//               >
+//                 {isSuggesting ? (
+//                   <>
+//                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+//                     Suggesting...
+//                   </>
+//                 ) : (
+//                   "Suggest Keywords"
+//                 )}
+//               </Button>
+//               {suggestedKeywords && (
+//                 <div className="p-4 border rounded-lg bg-muted/50">
+//                   <h4 className="text-sm font-medium">Suggested Keywords:</h4>
+//                   <p className="text-sm">{suggestedKeywords}</p>
+//                   <p className="text-sm text-muted-foreground mt-2">
+//                     Add these keywords to your skills, summary, or experience sections to improve ATS compatibility.
+//                   </p>
+//                 </div>
+//               )}
+//             </div>
+
 //             <div className="space-y-4">
 //               <h3 className="text-lg font-medium">Contact Information</h3>
 //               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/50">
+//                 <div className="space-y-2">
+//                   <label className="text-sm font-medium">Professional Title</label>
+//                   <Input
+//                     {...register("contactInfo.professionalTitle")}
+//                     placeholder="e.g., Data Scientist"
+//                   />
+//                   {errors.contactInfo?.professionalTitle && (
+//                     <p className="text-sm text-red-500">
+//                       {errors.contactInfo.professionalTitle.message}
+//                     </p>
+//                   )}
+//                 </div>
 //                 <div className="space-y-2">
 //                   <label className="text-sm font-medium">Email</label>
 //                   <Input
@@ -490,7 +449,28 @@
 //                   )}
 //                 </div>
 //                 <div className="space-y-2">
-//                   <label className="text-sm font-medium">LinkedIn URL</label>
+//                   <label className="text-sm font-medium">City</label>
+//                   <Input
+//                     {...register("contactInfo.city")}
+//                     placeholder="e.g., Philadelphia"
+//                   />
+//                   {errors.contactInfo?.city && (
+//                     <p className="text-sm text-red-500">
+//                       {errors.contactInfo.city.message}
+//                     </p>
+//                   )}
+//                 </div>
+//                 <div className="space-y-2">
+//                   <label className="text-sm font-medium">State</label>
+//                   <Input {...register("contactInfo.state")} placeholder="e.g., PA" />
+//                   {errors.contactInfo?.state && (
+//                     <p className="text-sm text-red-500">
+//                       {errors.contactInfo.state.message}
+//                     </p>
+//                   )}
+//                 </div>
+//                 <div className="space-y-2">
+//                   <label className="text-sm font-medium">LinkedIn URL (Optional)</label>
 //                   <Input
 //                     {...register("contactInfo.linkedin")}
 //                     type="url"
@@ -502,25 +482,11 @@
 //                     </p>
 //                   )}
 //                 </div>
-//                 <div className="space-y-2">
-//                   <label className="text-sm font-medium">Twitter/X Profile</label>
-//                   <Input
-//                     {...register("contactInfo.twitter")}
-//                     type="url"
-//                     placeholder="https://twitter.com/your-handle"
-//                   />
-//                   {errors.contactInfo?.twitter && (
-//                     <p className="text-sm text-red-500">
-//                       {errors.contactInfo.twitter.message}
-//                     </p>
-//                   )}
-//                 </div>
 //               </div>
 //             </div>
 
-//             {/* Summary */}
 //             <div className="space-y-4">
-//               <h3 className="text-lg font-medium">Professional Summary</h3>
+//               <h3 className="text-lg font-medium">Objective</h3>
 //               <Controller
 //                 name="summary"
 //                 control={control}
@@ -528,7 +494,7 @@
 //                   <Textarea
 //                     {...field}
 //                     className="h-32"
-//                     placeholder="Write a compelling professional summary..."
+//                     placeholder="Write a compelling objective..."
 //                   />
 //                 )}
 //               />
@@ -537,9 +503,8 @@
 //               )}
 //             </div>
 
-//             {/* Skills */}
 //             <div className="space-y-4">
-//               <h3 className="text-lg font-medium">Skills</h3>
+//               <h3 className="text-lg font-medium">Skills & Abilities</h3>
 //               <Controller
 //                 name="skills"
 //                 control={control}
@@ -547,7 +512,7 @@
 //                   <Textarea
 //                     {...field}
 //                     className="h-32"
-//                     placeholder="List your key skills..."
+//                     placeholder="List your key skills (one per line)..."
 //                   />
 //                 )}
 //               />
@@ -556,9 +521,8 @@
 //               )}
 //             </div>
 
-//             {/* Experience */}
 //             <div className="space-y-4">
-//               <h3 className="text-lg font-medium">Work Experience</h3>
+//               <h3 className="text-lg font-medium">Experience</h3>
 //               <Controller
 //                 name="experience"
 //                 control={control}
@@ -571,13 +535,10 @@
 //                 )}
 //               />
 //               {errors.experience && (
-//                 <p className="text-sm text-red-500">
-//                   {errors.experience.message}
-//                 </p>
+//                 <p className="text-sm text-red-500">{errors.experience.message}</p>
 //               )}
 //             </div>
 
-//             {/* Education */}
 //             <div className="space-y-4">
 //               <h3 className="text-lg font-medium">Education</h3>
 //               <Controller
@@ -592,15 +553,12 @@
 //                 )}
 //               />
 //               {errors.education && (
-//                 <p className="text-sm text-red-500">
-//                   {errors.education.message}
-//                 </p>
+//                 <p className="text-sm text-red-500">{errors.education.message}</p>
 //               )}
 //             </div>
 
-//             {/* Projects */}
 //             <div className="space-y-4">
-//               <h3 className="text-lg font-medium">Projects</h3>
+//               <h3 className="text-lg font-medium">Projects (Optional)</h3>
 //               <Controller
 //                 name="projects"
 //                 control={control}
@@ -613,15 +571,12 @@
 //                 )}
 //               />
 //               {errors.projects && (
-//                 <p className="text-sm text-red-500">
-//                   {errors.projects.message}
-//                 </p>
+//                 <p className="text-sm text-red-500">{errors.projects.message}</p>
 //               )}
 //             </div>
 //           </form>
 //         </TabsContent>
 
-//         {/* PREVIEW TAB */}
 //         <TabsContent value="preview">
 //           {activeTab === "preview" && (
 //             <Button
@@ -666,30 +621,33 @@
 //         </TabsContent>
 //       </Tabs>
 
-//       {/* Offscreen container used for generating the PDF 
-//       removed mecoz we arent using the pdf genertor*/}
 //       <div
 //         id="resume-pdf"
 //         style={{
 //           position: "absolute",
 //           top: 0,
-//           left: "-9999px", // Moves it offscreen
+//           left: "-9999px",
 //           backgroundColor: "#ffffff",
 //           color: "#000000",
 //           padding: "1rem",
-//           // Optionally, set a width (e.g., matching A4 dimensions in pixels)
-//           width: "794px", // Approximately A4 width at 96 DPI
+//           width: "794px",
 //         }}
 //       >
 //         <MDEditor.Markdown
 //           source={previewContent}
 //           style={{ backgroundColor: "#ffffff", color: "#000000" }}
+//         />
+//       </div>
+//     </div>
+//   );
+// }
 
 
 "use client";
 
 import { calculateATSScore } from "@/actions/ats";
 import { suggestKeywords } from "@/actions/keywords";
+import { improveWithAI } from "@/actions/resume"; // Import improveWithAI
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -700,6 +658,7 @@ import {
   Loader2,
   Monitor,
   Save,
+  Sparkles,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
@@ -712,19 +671,17 @@ import { saveResume } from "@/actions/resume";
 import { EntryForm } from "./entry-form";
 import useFetch from "@/hooks/use-fetch";
 import { useUser } from "@clerk/nextjs";
-import { entriesToMarkdown } from "@/app/lib/helper";
 import { resumeSchema } from "@/app/lib/schema";
-
 
 export default function ResumeBuilder({ initialContent }) {
   const [activeTab, setActiveTab] = useState("edit");
   const [previewContent, setPreviewContent] = useState(initialContent);
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestedKeywords, setSuggestedKeywords] = useState("");
-  const [atsScore, setAtsScore] = useState(null); // New state
-  const [atsFeedback, setAtsFeedback] = useState(""); // New state
+  const [atsScore, setAtsScore] = useState(null);
+  const [atsFeedback, setAtsFeedback] = useState("");
 
   const {
     control,
@@ -732,10 +689,18 @@ export default function ResumeBuilder({ initialContent }) {
     handleSubmit,
     watch,
     formState: { errors },
+    setValue,
   } = useForm({
     resolver: zodResolver(resumeSchema),
     defaultValues: {
-      contactInfo: {},
+      contactInfo: {
+        professionalTitle: "",
+        email: "",
+        mobile: "",
+        city: "",
+        state: "",
+        linkedin: "",
+      },
       summary: "",
       skills: "",
       experience: [],
@@ -751,7 +716,7 @@ export default function ResumeBuilder({ initialContent }) {
     data: saveResult,
     error: saveError,
   } = useFetch(saveResume);
-// edited  here
+
   const {
     loading: isSuggesting,
     fn: suggestKeywordsFn,
@@ -765,9 +730,16 @@ export default function ResumeBuilder({ initialContent }) {
     data: atsData,
     error: atsError,
   } = useFetch(calculateATSScore);
- 
-  // Watch form fields for preview updates
+
+  const {
+    loading: isImproving,
+    fn: improveWithAIFn,
+    data: improvedContent,
+    error: improveError,
+  } = useFetch(improveWithAI);
+
   const formValues = watch();
+
   useEffect(() => {
     if (keywordsData && !isSuggesting) {
       setSuggestedKeywords(keywordsData);
@@ -789,6 +761,32 @@ export default function ResumeBuilder({ initialContent }) {
     }
   }, [atsData, atsError, isCalculatingATS]);
 
+  useEffect(() => {
+    if (improvedContent && !isImproving) {
+      setValue("summary", improvedContent);
+      toast.success("Professional Summary improved successfully!");
+    }
+    if (improveError) {
+      toast.error(improveError.message || "Failed to improve summary");
+    }
+  }, [improvedContent, improveError, isImproving, setValue]);
+
+  useEffect(() => {
+    if (activeTab === "edit") {
+      const newContent = getCombinedContent();
+      setPreviewContent(newContent ? newContent : initialContent);
+    }
+  }, [formValues, activeTab, initialContent]);
+
+  useEffect(() => {
+    if (saveResult && !isSaving) {
+      toast.success("Resume saved successfully!");
+    }
+    if (saveError) {
+      toast.error(saveError.message || "Failed to save resume");
+    }
+  }, [saveResult, saveError, isSaving]);
+
   const handleCalculateATSScore = async () => {
     const jobDescription = formValues.jobDescription;
     if (!jobDescription) {
@@ -808,61 +806,82 @@ export default function ResumeBuilder({ initialContent }) {
     await suggestKeywordsFn({ jobDescription });
   };
 
-//edited here appy
-
-  // Rebuild the preview content whenever form values change in "edit" mode
-  useEffect(() => {
-    if (activeTab === "edit") {
-      const newContent = getCombinedContent();
-      setPreviewContent(newContent ? newContent : initialContent);
+  const handleImproveSummary = async () => {
+    const currentSummary = formValues.summary;
+    if (!currentSummary && !suggestedKeywords) {
+      toast.error("Please enter a summary or generate keywords first");
+      return;
     }
-  }, [formValues, activeTab, initialContent]);
 
-  // Show toast notifications for saving
-  useEffect(() => {
-    if (saveResult && !isSaving) {
-      toast.success("Resume saved successfully!");
-    }
-    if (saveError) {
-      toast.error(saveError.message || "Failed to save resume");
-    }
-  }, [saveResult, saveError, isSaving]);
+    const contentToImprove = suggestedKeywords
+      ? `${currentSummary}\n\nIncorporate these keywords: ${suggestedKeywords}`
+      : currentSummary;
 
-  // Build contact info markdown
-  const getContactMarkdown = () => {
-    const { contactInfo } = formValues;
-    const parts = [];
-    if (contactInfo.email) parts.push(`Email: ${contactInfo.email}`);
-    if (contactInfo.mobile) parts.push(`Contact: ${contactInfo.mobile}`);
-    if (contactInfo.linkedin)
-      parts.push(`LinkedIn(${contactInfo.linkedin})`);
-    if (contactInfo.twitter) parts.push(`Twitter(${contactInfo.twitter})`);
-
-    return parts.length > 0
-      ? `${user.fullName}</div>
-      
-<div align="center">
-${parts.join(" | ")}
-</div>`
-      : "";
+    await improveWithAIFn({
+      current: contentToImprove,
+      type: "summary",
+    });
   };
 
-  // Combine all markdown sections
   const getCombinedContent = () => {
-    const { summary, skills, experience, education, projects } = formValues;
-    return [
-      getContactMarkdown(),
-      summary && `## PROFESSIONAL SUMMARY\n\n${summary}`,
-      skills && `## SKILLS\n\n${skills}`,
-      entriesToMarkdown(experience, "WORK EXPERIENCE"),
-      entriesToMarkdown(education, "EDUCATION"),
-      entriesToMarkdown(projects, "PROJECTS"),
-    ]
+    const { summary, skills, experience, education, projects, contactInfo } = formValues;
+    const fullName = user?.fullName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Your Name";
+
+    const header = [
+      fullName,
+      contactInfo.professionalTitle || "PROFESSIONAL TITLE",
+      `${contactInfo.city || "City"}, ${contactInfo.state || "State"} | ${contactInfo.mobile || "Phone"} | ${contactInfo.email || "Email"}`,
+    ].join("\n");
+
+    const objective = summary ? `## Professional Summary\n\n${summary}\n\n---` : "";
+
+    const experienceSection = experience.length
+      ? `## Experience\n\n${experience
+          .map(
+            (exp) =>
+              `${exp.organization || "Organization Name"} | ${exp.title || "Job Title"}\n${exp.startDate || "20XX"} - ${
+                exp.endDate || "20XX"
+              }\n${exp.description
+                .split("\n")
+                .map((line) => `- ${line.trim()}`)
+                .join("\n")}`
+          )
+          .join("\n\n")}\n\n---`
+      : "";
+
+    const educationSection = education.length
+      ? `## Education\n\n${education
+          .map(
+            (edu) =>
+              `${edu.organization || "University Name"}, ${edu.title || "Degree"}\n${edu.startDate || "20XX"} - ${edu.endDate || "20XX"}`
+          )
+          .join("\n\n")}\n\n---`
+      : "";
+
+    const projectsSection = projects.length
+      ? `## Projects\n\n${projects
+          .map(
+            (proj) =>
+              `${proj.title || "Project Title"}\n${proj.startDate || "20XX"} - ${proj.endDate || "20XX"}\n${proj.description
+                .split("\n")
+                .map((line) => `- ${line.trim()}`)
+                .join("\n")}`
+          )
+          .join("\n\n")}\n\n---`
+      : "";
+
+    const skillsSection = skills
+      ? `## Skills & Abilities\n\n${skills
+          .split("\n")
+          .map((skill) => `- ${skill.trim()}`)
+          .join("\n")}\n\n---`
+      : "";
+
+    return [header, objective, experienceSection, educationSection, projectsSection, skillsSection]
       .filter(Boolean)
       .join("\n\n");
   };
 
-  // Save the resume data
   const onSubmit = async () => {
     try {
       const formattedContent = previewContent
@@ -874,153 +893,103 @@ ${parts.join(" | ")}
       console.error("Save error:", error);
     }
   };
-  
 
-  // Generate single-page PDF with aspect ratio logic
-  //EDITED HERE TO RENDER RESUME USING JSPDF
-  /*const generatePDF = async () => {
-    setIsGenerating(true);
-    try {
-      const element = document.getElementById("resume-pdf");
-      if (!element) {
-        console.error("PDF container element not found.");
-        setIsGenerating(false);
-        return;
-      }
-      // Wait for the element to render completely before capturing
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL("image/jpeg", 0.98);
-
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const aspectRatio = canvasHeight / canvasWidth;
-
-      // Create jsPDF (A4, portrait)
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      let pdfWidth = pageWidth;
-      let pdfHeight = pdfWidth * aspectRatio;
-
-      // Scale down if height exceeds page height
-      if (pdfHeight > pageHeight) {
-        const scaleFactor = pageHeight / pdfHeight;
-        pdfHeight = pageHeight;
-        pdfWidth *= scaleFactor;
-      }
-
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("resume.pdf");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };*/
-
-  
+  // Use the updated generatePDF function from above
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
       const doc = new jsPDF("p", "mm", "a4");
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15; // 15mm margins
+      const margin = 15;
       const maxWidth = pageWidth - 2 * margin;
       let yPosition = margin;
   
-      // Set font and size
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
   
-      // Split the content into lines
       const content = getCombinedContent();
       const lines = content.split("\n");
+      let isSectionEnd = false;
+      let headerProcessed = false;
   
-      // Process each line
-      for (let line of lines) {
-        line = line.trim();
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
         if (!line) {
-          yPosition += 4; // Add spacing for empty lines
+          yPosition += 4;
           continue;
         }
   
-        // Handle headings
-        if (line.startsWith("## ")) 
-          {
-            if (yPosition !== margin) {
-              // Add a line separator before the heading (except for the first section)
-              doc.setDrawColor(200, 200, 200);
-              doc.line(margin, yPosition, pageWidth - margin, yPosition);
-              yPosition += 4;
-            }
+        // Process header only once
+        if (!headerProcessed && yPosition === margin) {
+          // Name
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(16);
+          doc.text(line, margin, yPosition);
+          yPosition += 6;
+  
+          // Professional Title
+          i++;
+          line = lines[i]?.trim() || "";
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(12);
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+  
+          // Contact Info
+          i++;
+          line = lines[i]?.trim() || "";
+          doc.setFontSize(10);
+          doc.text(line, margin, yPosition);
+          yPosition += 8;
+  
+          headerProcessed = true;
+          continue;
+        }
+  
+        if (line === "---") {
+          isSectionEnd = true;
+          doc.setDrawColor(150, 150, 150);
+          doc.line(margin, yPosition, pageWidth - margin, yPosition);
+          yPosition += 6;
+          continue;
+        }
+  
+        if (line.startsWith("## ")) {
+          if (yPosition !== margin + 19 && isSectionEnd) {
+            yPosition += 4;
+          }
           doc.setFont("helvetica", "bold");
           doc.setFontSize(14);
           const headingText = line.replace("## ", "");
-          const splitText = doc.splitTextToSize(headingText, maxWidth);
-          doc.text(splitText, margin, yPosition);
-          yPosition += splitText.length * 6 + 4; // Adjust spacing
+          doc.text(headingText, margin, yPosition);
+          yPosition += 8;
           doc.setFont("helvetica", "normal");
           doc.setFontSize(12);
-        }
-        // Handle subheadings (e.g., job titles)
-        else if (
-          line.includes(" @ ") &&
-          !line.startsWith("-") &&
-          !line.toLowerCase().startsWith("email:") &&
-          !line.toLowerCase().startsWith("phone:") &&
-          !line.toLowerCase().startsWith("linkedin:") &&
-          !line.toLowerCase().startsWith("twitter:")
-        ) {
+          isSectionEnd = false;
+        } else if (line.includes(" | ") && !line.startsWith("-")) {
           doc.setFont("helvetica", "bold");
           doc.setFontSize(12);
           const splitText = doc.splitTextToSize(line, maxWidth);
           doc.text(splitText, margin, yPosition);
           yPosition += splitText.length * 5 + 2;
           doc.setFont("helvetica", "normal");
-        }
-        // Handle contact info and name
-        else if (
-          yPosition === margin ||
-          line.toLowerCase().startsWith("email:") ||
-          line.toLowerCase().startsWith("phone:") ||
-          line.toLowerCase().startsWith("linkedin:") ||
-          line.toLowerCase().startsWith("twitter:")
-        ) {
-          if (yPosition === margin) {
-            // Name at the top
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text(line, margin, yPosition);
-            yPosition += 8;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-          } else {
-            // Contact info
-            doc.setFontSize(10);
-            const splitText = doc.splitTextToSize(line, maxWidth);
-            doc.text(splitText, margin, yPosition);
-            yPosition += splitText.length * 4 + 2;
-          }
-        }
-        // Handle bullet points
-        else if (line.startsWith("- ")) {
+        } else if (/^\d{4}\s*-\s*\d{4}$/.test(line)) {
+          doc.setFontSize(10);
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        } else if (line.startsWith("- ")) {
           const bulletText = line.replace("- ", "");
           const splitText = doc.splitTextToSize(bulletText, maxWidth - 5);
-          doc.text("•", margin, yPosition); // Add bullet
+          doc.text("•", margin, yPosition);
           doc.text(splitText, margin + 5, yPosition);
           yPosition += splitText.length * 5 + 2;
-        }
-        // Handle regular text (e.g., dates, summary, skills)
-        else {
+        } else {
           const splitText = doc.splitTextToSize(line, maxWidth);
           doc.text(splitText, margin, yPosition);
           yPosition += splitText.length * 5 + 2;
         }
   
-        // Check for page overflow
-        if (yPosition > pageHeight - margin) {
+        if (yPosition > doc.internal.pageSize.getHeight() - margin) {
           doc.addPage();
           yPosition = margin;
         }
@@ -1034,29 +1003,21 @@ ${parts.join(" | ")}
     }
   };
 
-//edited here to render text using jsPDF
+  if (!isLoaded) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div data-color-mode="light" className="space-y-4">
+    <div data-color-mode="light" className="max-w-4xl mx-auto space-y-4">
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
         <h1 className="font-bold gradient-title text-5xl md:text-6xl">
           Resume Builder
         </h1>
-        {/* <Button
-            variant="outline"
-            onClick={handleCalculateATSScore}
-            disabled={isCalculatingATS}
-          >
-            {isCalculatingATS ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Calculating...
-              </>
-            ) : (
-              "Calculate ATS Score"
-            )}
-          </Button> */}
         <div className="space-x-2">
-          {/* Save button */}
           <Button
             variant="destructive"
             onClick={handleSubmit(onSubmit)}
@@ -1074,7 +1035,6 @@ ${parts.join(" | ")}
               </>
             )}
           </Button>
-          {/* PDF generation button */}
           <Button onClick={generatePDF} disabled={isGenerating}>
             {isGenerating ? (
               <>
@@ -1097,58 +1057,65 @@ ${parts.join(" | ")}
           <TabsTrigger value="preview">Markdown</TabsTrigger>
         </TabsList>
 
-        {/* EDIT TAB */}
         <TabsContent value="edit">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Job Description */}
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Job Description (Optional)</h3>
-      <Controller
-        name="jobDescription"
-        control={control}
-        render={({ field }) => (
-          <Textarea
-            {...field}
-            className="h-32"
-            placeholder="Paste the job description here to get keyword suggestions..."
-          />
-        )}
-      />
-      {errors.jobDescription && (
-        <p className="text-sm text-red-500">{errors.jobDescription.message}</p>
-      )}
-
-    {/*edited here*/}
-         <Button
-              type="button"
-              variant="outline"
-              onClick={handleSuggestKeywords}
-              disabled={isSuggesting}
-            >
-              {isSuggesting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Suggesting...
-                </>
-              ) : (
-                "Suggest Keywords"
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Job Description (Optional)</h3>
+              <Controller
+                name="jobDescription"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    className="h-32"
+                    placeholder="Paste the job description here to get keyword suggestions..."
+                  />
+                )}
+              />
+              {errors.jobDescription && (
+                <p className="text-sm text-red-500">{errors.jobDescription.message}</p>
               )}
-            </Button>
-            {suggestedKeywords && (
-              <div className="p-4 border rounded-lg bg-muted/50">
-                <h4 className="text-sm font-medium">Suggested Keywords:</h4>
-                <p className="text-sm">{suggestedKeywords}</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add these keywords to your skills, summary, or experience sections to improve ATS compatibility.
-                </p>
-              </div>
-            )}
-           </div>
-{/*edit ends here*/}
-            {/* Contact Information */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSuggestKeywords}
+                disabled={isSuggesting}
+              >
+                {isSuggesting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Suggesting...
+                  </>
+                ) : (
+                  "Suggest Keywords"
+                )}
+              </Button>
+              {suggestedKeywords && (
+                <div className="p-4 border rounded-lg bg-muted/50">
+                  <h4 className="text-sm font-medium">Suggested Keywords:</h4>
+                  <p className="text-sm">{suggestedKeywords}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add these keywords to your skills, summary, or experience sections to improve ATS compatibility.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Contact Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/50">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Professional Title</label>
+                  <Input
+                    {...register("contactInfo.professionalTitle")}
+                    placeholder="e.g., Data Scientist"
+                  />
+                  {errors.contactInfo?.professionalTitle && (
+                    <p className="text-sm text-red-500">
+                      {errors.contactInfo.professionalTitle.message}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email</label>
                   <Input
@@ -1176,7 +1143,28 @@ ${parts.join(" | ")}
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">LinkedIn URL</label>
+                  <label className="text-sm font-medium">City</label>
+                  <Input
+                    {...register("contactInfo.city")}
+                    placeholder="e.g., Philadelphia"
+                  />
+                  {errors.contactInfo?.city && (
+                    <p className="text-sm text-red-500">
+                      {errors.contactInfo.city.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">State</label>
+                  <Input {...register("contactInfo.state")} placeholder="e.g., PA" />
+                  {errors.contactInfo?.state && (
+                    <p className="text-sm text-red-500">
+                      {errors.contactInfo.state.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">LinkedIn URL (Optional)</label>
                   <Input
                     {...register("contactInfo.linkedin")}
                     type="url"
@@ -1188,23 +1176,9 @@ ${parts.join(" | ")}
                     </p>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Twitter/X Profile</label>
-                  <Input
-                    {...register("contactInfo.twitter")}
-                    type="url"
-                    placeholder="https://twitter.com/your-handle"
-                  />
-                  {errors.contactInfo?.twitter && (
-                    <p className="text-sm text-red-500">
-                      {errors.contactInfo.twitter.message}
-                    </p>
-                  )}
-                </div>
               </div>
             </div>
 
-            {/* Summary */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Professional Summary</h3>
               <Controller
@@ -1221,11 +1195,29 @@ ${parts.join(" | ")}
               {errors.summary && (
                 <p className="text-sm text-red-500">{errors.summary.message}</p>
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleImproveSummary}
+                disabled={isImproving || (!formValues.summary && !suggestedKeywords)}
+              >
+                {isImproving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Improving...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Improve with AI
+                  </>
+                )}
+              </Button>
             </div>
 
-            {/* Skills */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Skills</h3>
+              <h3 className="text-lg font-medium">Skills & Abilities</h3>
               <Controller
                 name="skills"
                 control={control}
@@ -1233,7 +1225,7 @@ ${parts.join(" | ")}
                   <Textarea
                     {...field}
                     className="h-32"
-                    placeholder="List your key skills..."
+                    placeholder="List your key skills (one per line)..."
                   />
                 )}
               />
@@ -1242,9 +1234,8 @@ ${parts.join(" | ")}
               )}
             </div>
 
-            {/* Experience */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Work Experience</h3>
+              <h3 className="text-lg font-medium">Experience</h3>
               <Controller
                 name="experience"
                 control={control}
@@ -1257,13 +1248,10 @@ ${parts.join(" | ")}
                 )}
               />
               {errors.experience && (
-                <p className="text-sm text-red-500">
-                  {errors.experience.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.experience.message}</p>
               )}
             </div>
 
-            {/* Education */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Education</h3>
               <Controller
@@ -1278,15 +1266,12 @@ ${parts.join(" | ")}
                 )}
               />
               {errors.education && (
-                <p className="text-sm text-red-500">
-                  {errors.education.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.education.message}</p>
               )}
             </div>
 
-            {/* Projects */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Projects</h3>
+              <h3 className="text-lg font-medium">Projects (Optional)</h3>
               <Controller
                 name="projects"
                 control={control}
@@ -1299,15 +1284,12 @@ ${parts.join(" | ")}
                 )}
               />
               {errors.projects && (
-                <p className="text-sm text-red-500">
-                  {errors.projects.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.projects.message}</p>
               )}
             </div>
           </form>
         </TabsContent>
 
-        {/* PREVIEW TAB */}
         <TabsContent value="preview">
           {activeTab === "preview" && (
             <Button
@@ -1352,19 +1334,16 @@ ${parts.join(" | ")}
         </TabsContent>
       </Tabs>
 
-      {/* Offscreen container used for generating the PDF 
-      removed mecoz we arent using the pdf genertor*/}
       <div
         id="resume-pdf"
         style={{
           position: "absolute",
           top: 0,
-          left: "-9999px", // Moves it offscreen
+          left: "-9999px",
           backgroundColor: "#ffffff",
           color: "#000000",
           padding: "1rem",
-          // Optionally, set a width (e.g., matching A4 dimensions in pixels)
-          width: "794px", // Approximately A4 width at 96 DPI
+          width: "794px",
         }}
       >
         <MDEditor.Markdown
@@ -1375,11 +1354,3 @@ ${parts.join(" | ")}
     </div>
   );
 }
-
-
-
-//         />
-//       </div>
-//     </div>
-//   );
-// }
