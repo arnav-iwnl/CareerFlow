@@ -1,0 +1,128 @@
+import React from "react";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { ChevronDown, LayoutDashboard, StarsIcon } from "lucide-react";
+import { Button } from "./ui/button";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const Header = () => {
+  return (
+    <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-50 supports-[backdrop-filter]:bg-background/60">
+      <nav className="w-full flex items-center justify-between py-3 px-6">
+
+        {/* Logo aligned left */}
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="CareerFlow Logo"
+            width={1280}
+            height={384}
+            className="h-15 w-auto object-contain"
+          />
+        </Link>
+
+        {/* Navigation Items */}
+        <div className="flex items-center space-x-4">
+          <SignedIn>
+            <Link href="/dashboard">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden md:block">Industry Insights</span>
+              </Button>
+            </Link>
+          
+
+          {/* Growth Tools Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="flex items-center space-x-2">
+                <StarsIcon className="h-4 w-4" />
+                <span className="hidden md:block">Growth Tools</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Billing</DropdownMenuItem>
+              <DropdownMenuItem>Team</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          </SignedIn>
+
+          {/* User Authentication */}
+          <SignedOut>
+            <SignInButton>
+              <Button variant="outline">Sign In</Button>
+              </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton 
+              appearance={
+                {
+                  elements:{
+                    avatarBox: "w-10 h-10",
+                    userButtonPopoverCard: "shadow-xl",
+                    userPreviewMainIdentifier: "font-semibold",
+                  },
+                }}
+             afterSignOutUrl="/"
+            />
+          </SignedIn>
+        </div>
+      </nav>
+    </header>
+  );
+};
+
+export default Header;
+
+
+
+
+
+keywords = [
+# Databases and related technologies
+"database", "SQL", "NoSQL", "MongoDB", "PostgreSQL", "MySQL", "Oracle Database", "Redis", "data warehousing",
+
+# Web Development (Full-Stack)
+"web development", "frontend", "backend", "full stack", "HTML", "CSS", "JavaScript", "React", "Angular", "Vue", "Node.js", "Express.js", "Django", "Ruby on Rails",
+
+# Data Science and Analytics
+"data science", "machine learning", "deep learning", "neural networks", "Python", "R", "statistics", "data analysis", "data visualization", "TensorFlow", "PyTorch", "scikit-learn",
+
+# Programming Languages and Concepts
+"programming", "C++", "Java", "C#", "Go", "Swift", "Kotlin", "algorithms", "data structures", "object-oriented programming", "functional programming",
+
+# Cloud, DevOps, and Infrastructure
+"DevOps", "CI/CD", "Docker", "Kubernetes", "cloud computing", "AWS", "Azure", "Google Cloud", "serverless", "microservices", "infrastructure as code",
+
+# Cybersecurity and Networking
+"cybersecurity", "ethical hacking", "penetration testing", "network security", "cryptography", "firewalls", "incident response",
+
+# Mobile App Development
+"mobile app development", "iOS development", "Android development", "Swift", "Kotlin", "React Native", "Flutter",
+
+# Design and User Experience
+"UI/UX design", "graphic design", "Adobe XD", "Figma", "Sketch", "user interface", "user experience",
+
+# Game Development and Interactive Media
+"game development", "Unity", "Unreal Engine", "Cocos2d", "3D modeling", "game design",
+
+# Blockchain and Cryptocurrencies
+"blockchain", "cryptocurrency", "smart contracts", "Ethereum", "Hyperledger",
+
+# Big Data and Data Engineering
+"big data", "Hadoop", "Spark", "data engineering", "data pipeline", "ETL", "Apache Airflow",
+
+# Digital Marketing and E-commerce
+"digital marketing", "SEO", "content marketing", "social media marketing", "Google Analytics", "e-commerce",
+
+# Project and Product Management
+"project management", "Agile", "Scrum", "Kanban", "product management"
+]
