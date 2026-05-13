@@ -39,7 +39,7 @@ export async function calculateATSScore({ content, jobDescription }) {
   }
 
   // Use AI to analyze keyword matching
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
   const prompt = `
     Analyze the following resume content and job description to calculate an ATS compatibility score (0-100) based on keyword matching. Return the result as a JSON object with "keywordScore" (number) and "keywordFeedback" (string).
 
