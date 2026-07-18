@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useEffect } from "react";
+
 const useFetch = (cb) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
